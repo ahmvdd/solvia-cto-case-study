@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Solvia · Simulateur budgétaire</title>
+<meta name="description" content="Rejouer les arbitrages budgétaires du cas Solvia : coupe de 20 %, fiabilisation, effet sur le runway.">
+<style>
+:root{
+  --bg:#f6f7f9; --card:#ffffff; --ink:#15181d; --muted:#5d6570; --line:#e3e6ea;
+  --accent:#2f5bd3; --ok:#1f8a4c; --warn:#b86e00; --bad:#c23b33;
+  --proved:#1f8a4c; --audit:#d49a1c; --contract:#6b7fd7; --fiab:#9b5bd3;
+  --radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0f1115; --card:#171a20; --ink:#e8eaee; --muted:#9aa3ae; --line:#2a2f37;
+    --accent:#7d9bff; --ok:#4cc27d; --warn:#e5a43b; --bad:#ef6b62;
+    --proved:#4cc27d; --audit:#e5b04b; --contract:#8d9cf0; --fiab:#bb86ee;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1120px;margin:0 auto;padding:28px 16px 48px}
+header h1{font-size:1.6rem;margin:0 0 4px;letter-spacing:-.01em}
+header p{margin:0;color:var(--muted);max-width:760px}
+.scenarios{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0}
+.scenarios button{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:9px 14px;border-radius:999px;cursor:pointer;font:inherit}
+.scenarios button.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.scenarios .hint{color:var(--muted);align-self:center;font-size:.88rem}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:860px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+.card h2{font-size:1rem;margin:0 0 12px}
+.row{padding:10px 0;border-top:1px solid var(--line)}
+.row:first-of-type{border-top:0}
+.row-head{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+.row-head label{font-weight:600}
+.row small{display:block;color:var(--muted);font-size:.82rem}
+.amt{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600}
+.tag{display:inline-block;font-size:.72rem;padding:1px 7px;border-radius:999px;margin-left:6px;font-weight:600;vertical-align:1px}
+.t-proved{background:color-mix(in srgb,var(--proved) 18%,transparent);color:var(--proved)}
+.t-audit{background:color-mix(in srgb,var(--audit) 20%,transparent);color:var(--audit)}
+.t-contract{background:color-mix(in srgb,var(--contract) 20%,transparent);color:var(--contract)}
+input[type=range]{width:100%;accent-color:var(--accent);margin-top:6px}
+input[type=checkbox]{accent-color:var(--accent);width:17px;height:17px;vertical-align:-3px;margin-right:6px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+@media (max-width:860px){.kpis{grid-template-columns:repeat(2,1fr)}.kpi .v{font-size:1.1rem}}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px}
+.kpi .l{color:var(--muted);font-size:.8rem}
+.kpi .v{white-space:nowrap;font-size:1.45rem;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.kpi .s{font-size:.8rem;color:var(--muted)}
+.good{color:var(--ok)} .warn{color:var(--warn)} .bad{color:var(--bad)}
+.bar{display:flex;height:26px;border-radius:8px;overflow:hidden;background:var(--line);margin:8px 0}
+.bar div{height:100%;transition:width .25s}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:.82rem;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.runway{position:relative;height:34px;background:var(--line);border-radius:8px;margin:28px 0 4px}
+.runway .fill{position:absolute;inset:0 auto 0 0;background:var(--accent);border-radius:8px;transition:width .25s}
+.runway .mark{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--muted)}
+.runway .mark span{position:absolute;top:-18px;left:-14px;font-size:.72rem;color:var(--muted);white-space:nowrap}
+.scale{display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted)}
+.alerts{list-style:none;padding:0;margin:0}
+.alerts li{padding:8px 10px;border-radius:8px;margin-bottom:6px;font-size:.88rem;border-left:3px solid}
+.alerts .a-bad{background:color-mix(in srgb,var(--bad) 10%,transparent);border-color:var(--bad)}
+.alerts .a-warn{background:color-mix(in srgb,var(--warn) 12%,transparent);border-color:var(--warn)}
+.alerts .a-ok{background:color-mix(in srgb,var(--ok) 10%,transparent);border-color:var(--ok)}
+.protected{font-size:.86rem;color:var(--muted);margin-top:10px}
+footer{margin-top:28px;font-size:.8rem;color:var(--muted)}
+a{color:var(--accent)}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Solvia · Simulateur budgétaire</h1>
+    <p>Le conseil impose −20 % sur le budget technique (5 497 000 €). Déplace les curseurs pour voir ce que chaque arbitrage coûte en fiabilité et rapporte en runway. Les montants viennent du <a href="https://github.com/ahmvdd/solvia-cto-case-study/blob/main/docs/05-budget-revise.md">budget révisé</a>.</p>
+  </header>
+
+  <div class="scenarios" role="group" aria-label="Scénarios">
+    <button data-s="A">A · −20 % brut, fiabilité reportée</button>
+    <button data-s="B">B · −20 % brut, fiabilité financée</button>
+    <button data-s="C">C · −20 % net (recommandé)</button>
+    <span class="hint" id="scenarioHint"></span>
+  </div>
+
+  <section class="kpis" aria-live="polite">
+    <div class="kpi"><div class="l">Coupe brute</div><div class="v" id="kBrut"></div><div class="s" id="kBrutPct"></div></div>
+    <div class="kpi"><div class="l">Réduction nette</div><div class="v" id="kNet"></div><div class="s" id="kNetPct"></div></div>
+    <div class="kpi"><div class="l">Écart à l'objectif net</div><div class="v" id="kGap"></div><div class="s" id="kGapS"></div></div>
+    <div class="kpi"><div class="l">Runway</div><div class="v" id="kRun"></div><div class="s" id="kRunS"></div></div>
+  </section>
+
+  <div class="grid">
+    <section class="card">
+      <h2>1. Où couper</h2>
+      <div class="row">
+        <div class="row-head"><label><input type="checkbox" id="cGpu" checked>Cluster GPU solvia-ml-exp<span class="tag t-proved">prouvé</span></label><span class="amt" id="vGpu"></span></div>
+        <small>3 % d'usage, actif 24/7 depuis 14 mois (P.3)</small>
+      </div>
+      <div class="row">
+        <div class="row-head"><label><input type="checkbox" id="cSeats" checked>Sièges SaaS inutilisés<span class="tag t-proved">prouvé</span></label><span class="amt" id="vSeats"></span></div>
+        <small>210/96, 60/41 et 40/6 sièges facturés/actifs (P.4)</small>
+      </div>
+      <div class="row">
+        <div class="row-head"><label for="rDw">Entrepôt de données<span class="tag t-audit">à auditer</span></label><span class="amt" id="vDw"></span></div>
+        <input type="range" id="rDw" min="0" max="118000" step="1000">
+        <small>Sur 118 000 €. Au-delà de 50 k€, le reporting de la DAF est menacé</small>
+      </div>
+      <div class="row">
+        <div class="row-head"><label for="rTools">17 outils divers<span class="tag t-audit">à auditer</span></label><span class="amt" id="vTools"></span></div>
+        <input type="range" id="rTools" min="0" max="93000" step="1000">
+        <small>Sans propriétaire, doublons probables (P.4)</small>
+      </div>
+      <div class="row">
+        <div class="row-head"><label for="rCloud">Cloud hors cluster et prestations<span class="tag t-contract">à contractualiser</span></label><span class="amt" id="vCloud"></span></div>
+        <input type="range" id="rCloud" min="0" max="1100000" step="100">
+        <small>Leviers identifiés : arrêt de prestations, engagements cloud, préprods de 4 à 2 (≈ 632 700 €)</small>
+      </div>
+      <p class="protected">🔒 Hors simulation, par choix : masse salariale (3 040 000 €), Datadog (96 000 €), sécurité et conformité (47 000 €).</p>
+    </section>
+
+    <section class="card">
+      <h2>2. Ce qu'on réinvestit</h2>
+      <div class="row"><div class="row-head"><label><input type="checkbox" id="fInfra" checked>Infra et astreinte</label><span class="amt">40 000 €</span></div><small>Le chiffrage du SRE, ignoré en mars (P.6)</small></div>
+      <div class="row"><div class="row-head"><label><input type="checkbox" id="fSre" checked>Poste SRE (estimé)</label><span class="amt">80 000 €</span></div><small>Un seul SRE aujourd'hui (P.5)</small></div>
+      <div class="row"><div class="row-head"><label><input type="checkbox" id="fBillRec" checked>Renfort facturation : recrutement</label><span class="amt">18 000 €</span></div><small>Coût cabinet constaté (P.5)</small></div>
+      <div class="row"><div class="row-head"><label><input type="checkbox" id="fBillSal" checked>Renfort facturation : salaire (estimé)</label><span class="amt">90 000 €</span></div><small>~933 k€/mois sur une seule personne (P.6)</small></div>
+      <div class="row"><div class="row-head"><label><input type="checkbox" id="fRgpd" checked>Analyse d'impact RGPD (estimée)</label><span class="amt">40 000 €</span></div><small>28 000 décisions/mois sans AIPD (P.6, P.8)</small></div>
+    </section>
+
+    <section class="card">
+      <h2>Solidité de la coupe</h2>
+      <div class="bar" id="compBar" aria-hidden="true"></div>
+      <div class="legend">
+        <span><i style="background:var(--proved)"></i>Prouvé <b id="lProved"></b></span>
+        <span><i style="background:var(--audit)"></i>À auditer <b id="lAudit"></b></span>
+        <span><i style="background:var(--contract)"></i>À contractualiser <b id="lContract"></b></span>
+      </div>
+      <h2 style="margin-top:18px">Runway (trésorerie 18,6 M€)</h2>
+      <div class="runway"><div class="fill" id="runFill"></div><div class="mark" id="runBase"><span>actuel 14,0</span></div></div>
+      <div class="scale"><span>12 mois</span><span>14</span><span>16 mois</span></div>
+    </section>
+
+    <section class="card">
+      <h2>Ce que le conseil doit savoir</h2>
+      <ul class="alerts" id="alerts"></ul>
+    </section>
+  </div>
+
+  <footer>
+    Cas pédagogique fictif (Mastère CTO &amp; Tech Lead, HETIC). Formules : coupe nette = coupe brute − fiabilisation ; runway = 18,6 M€ ÷ (1,33 M€ − coupe nette ÷ 12).
+    Tous les montants par défaut sont vérifiés par <a href="https://github.com/ahmvdd/solvia-cto-case-study/blob/main/outils/verif_calculs.py">verif_calculs.py</a>.
+  </footer>
+</main>
+
+<script>
+(() => {
+  const BUDGET = 5497000, TRESO = 18600000, BURN = 1330000, TARGET = 0.20;
+  const GPU = 288000, SEATS = 35700, CLOUD_IDENTIFIED = 632700;
+  const FIAB = { fInfra: 40000, fSre: 80000, fBillRec: 18000, fBillSal: 90000, fRgpd: 40000 };
+  const $ = id => document.getElementById(id);
+  const eur = n => Math.round(n).toLocaleString('fr-FR').replace(/ | /g, ' ') + ' €';
+  const pct = n => (n * 100).toLocaleString('fr-FR', { maximumFractionDigits: 1, minimumFractionDigits: 1 }) + ' %';
+  const RMIN = 12, RMAX = 16;
+
+  const SCENARIOS = {
+    A: { fiab: false, cloud: 632700, dw: 50000, tools: 93000, hint: 'On tient les 20 %, mais sans rien réparer.' },
+    B: { fiab: true, cloud: 632700, dw: 50000, tools: 93000, hint: 'La fiabilité est financée : la réduction nette tombe à 15,1 %.' },
+    C: { fiab: true, cloud: 900700, dw: 50000, tools: 93000, hint: '1 367 400 € de coupes brutes pour tenir −20 % net.' },
+  };
+
+  function apply(s) {
+    const c = SCENARIOS[s];
+    $('cGpu').checked = true; $('cSeats').checked = true;
+    $('rDw').value = c.dw; $('rTools').value = c.tools; $('rCloud').value = c.cloud;
+    Object.keys(FIAB).forEach(k => $(k).checked = c.fiab);
+    document.querySelectorAll('.scenarios button').forEach(b => b.classList.toggle('active', b.dataset.s === s));
+    $('scenarioHint').textContent = c.hint;
+    render();
+  }
+
+  function render() {
+    const gpu = $('cGpu').checked ? GPU : 0;
+    const seats = $('cSeats').checked ? SEATS : 0;
+    const dw = +$('rDw').value, tools = +$('rTools').value, cloud = +$('rCloud').value;
+    const fiab = Object.entries(FIAB).reduce((s, [k, v]) => s + ($(k).checked ? v : 0), 0);
+
+    const proved = gpu + seats, audit = dw + tools, contract = cloud;
+    const brut = proved + audit + contract;
+    const net = brut - fiab;
+    const objective = BUDGET * TARGET;
+    const gap = net - objective;
+    const runway = TRESO / (BURN - net / 12);
+
+    $('vGpu').textContent = eur(gpu); $('vSeats').textContent = eur(seats);
+    $('vDw').textContent = eur(dw); $('vTools').textContent = eur(tools); $('vCloud').textContent = eur(cloud);
+
+    $('kBrut').textContent = eur(brut); $('kBrutPct').textContent = pct(brut / BUDGET) + ' du budget';
+    $('kNet').textContent = eur(net); $('kNetPct').textContent = pct(net / BUDGET) + ' net, après ' + eur(fiab) + ' réinvestis';
+    const g = $('kGap');
+    g.textContent = Math.abs(gap) < 0.5 ? '0 €' : (gap > 0 ? '+' : '−') + eur(Math.abs(gap));
+    g.className = 'v ' + (Math.abs(gap) < 1 ? 'good' : gap > 0 ? 'good' : 'bad');
+    $('kGapS').textContent = gap >= -0.5 ? 'objectif de 1 099 400 € net atteint' : 'manque pour atteindre −20 % net';
+    $('kRun').textContent = runway.toLocaleString('fr-FR', { maximumFractionDigits: 2, minimumFractionDigits: 2 }) + ' mois';
+    $('kRunS').textContent = 'burn ' + eur(BURN - net / 12) + '/mois';
+
+    const tot = Math.max(brut, 1);
+    $('compBar').innerHTML =
+      `<div style="width:${proved / tot * 100}%;background:var(--proved)"></div>` +
+      `<div style="width:${audit / tot * 100}%;background:var(--audit)"></div>` +
+      `<div style="width:${contract / tot * 100}%;background:var(--contract)"></div>`;
+    $('lProved').textContent = eur(proved); $('lAudit').textContent = eur(audit); $('lContract').textContent = eur(contract);
+
+    const pos = v => Math.min(100, Math.max(0, (v - RMIN) / (RMAX - RMIN) * 100));
+    $('runFill').style.width = pos(runway) + '%';
+    $('runBase').style.left = pos(TRESO / BURN) + '%';
+
+    const A = [];
+    if (!$('fInfra').checked || !$('fSre').checked) A.push(['bad', 'Production : pas d’astreinte ou un seul SRE. Le scénario du 14 février (6 h 08 d’arrêt) reste possible, avec 3 quasi-incidents déjà constatés.']);
+    if (!$('fBillRec').checked || !$('fBillSal').checked) A.push(['bad', 'Facturation : bus factor de 1 sur ~933 k€/mois, alors que le titulaire est sur le départ.']);
+    if (!$('fRgpd').checked) A.push(['bad', 'Score : 28 000 décisions/mois sans analyse d’impact. Exposition juridique non couverte.']);
+    if (cloud > CLOUD_IDENTIFIED + 50) A.push(['warn', `Cloud et prestations : ${eur(cloud - CLOUD_IDENTIFIED)} au-delà des leviers identifiés. À trouver par audit, rien ne le prouve aujourd’hui.`]);
+    if (dw > 50000) A.push(['warn', 'Entrepôt de données : au-delà de 50 k€ de coupe, le reporting de la DAF n’est plus garanti.']);
+    const provedShare = proved / tot;
+    A.push([provedShare >= 0.5 ? 'ok' : 'warn', `Seuls ${pct(provedShare)} de la coupe sont prouvés par pièce. Le reste doit être signé avant d’être compté comme acquis.`]);
+    if (gap >= -0.5 && fiab === 268000) A.push(['ok', 'Objectif −20 % net tenu avec la fiabilité entièrement financée.']);
+    $('alerts').innerHTML = A.map(([t, m]) => `<li class="a-${t}">${m}</li>`).join('');
+    document.querySelectorAll('.scenarios button').forEach(b => {
+      const c = SCENARIOS[b.dataset.s];
+      const match = +$('rCloud').value === c.cloud && +$('rDw').value === c.dw && +$('rTools').value === c.tools && gpu && seats && Object.keys(FIAB).every(k => $(k).checked === c.fiab);
+      b.classList.toggle('active', !!match);
+    });
+  }
+
+  document.querySelectorAll('input').forEach(i => i.addEventListener('input', () => { $('scenarioHint').textContent = ''; render(); }));
+  document.querySelectorAll('.scenarios button').forEach(b => b.addEventListener('click', () => apply(b.dataset.s)));
+  apply('B');
+})();
+</script>
+</body>
+</html>
