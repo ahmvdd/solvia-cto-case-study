@@ -5,6 +5,8 @@
 
 **Pas une ligne de code n'était autorisée : c'est un exercice de décision, pas d'ingénierie.** Ce repo montre comment on a lu, tranché, chiffré et défendu nos choix, puis ce qu'on ferait de plus avec du recul.
 
+> ⏱️ **Pressé ?** Lis le [résumé exécutif en une page](docs/resume-executif.md), puis rejoue les arbitrages dans le [**simulateur budgétaire interactif**](https://ahmvdd.github.io/solvia-cto-case-study/dashboard/).
+
 ---
 
 ## Le cas en 30 secondes
@@ -52,6 +54,8 @@ flowchart LR
 | 09 | [Plan à 90 jours](docs/09-plan-90-jours.md) | Sécuriser, tester, déployer, prouver |
 | 10 | [Soutenance devant le conseil](docs/10-soutenance.md) | Le support, la banque de questions et réponses, les pièges et leurs parades |
 | 11 | [**Au-delà de la copie : vision CTO**](docs/11-vision-cto.md) | Ce qu'on ferait avec du recul : pistes hors du cadre, leçons de leadership |
+| ADR | [**Architecture Decision Records**](docs/adr/README.md) | Les 4 décisions structurantes au format ADR : contexte, alternatives écartées, conséquences, critère de révision |
+| 📊 | [**Simulateur budgétaire**](https://ahmvdd.github.io/solvia-cto-case-study/dashboard/) ([source](dashboard/index.html)) | Rejouer la coupe de 20 % : scénarios A/B/C, solidité des économies, effet sur le runway |
 | 🔧 | [`outils/verif_calculs.py`](outils/verif_calculs.py) | Tous les chiffres du dossier recalculés et reproductibles (écrit après l'exercice) |
 
 ## Les chiffres qui comptent
